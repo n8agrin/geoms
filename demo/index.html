@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script src='../test/vendor/jquery-1.7.2.js'></script>
+<script src="../vendor/d3.v2.js"></script>
+<script src="../lib/chart.js"></script>
+<script src="../lib/point.js"></script>
+<script src="../lib/line.js"></script>
+<script type="text/javascript">
+$(function() {
+
+    function showScatter(data) {
+        var x = d3.time.scale();
+        var y = d3.scale.linear();
+        var color = d3.scale.category20();
+        var i = 1, z = data.length;
+
+        var p = point()
+            .scales({
+                x: x,
+                y: y,
+                color: color
+            })
+            .size([200, 100])
+            .r(1)
+            .enter(function() {
+                this.style('opacity', 1e-6)
+                    .attr('r', 1);
+
+                this.transition()
+                    .duration(1000)
+                    .style('opacity', 1);
+            })
+            .update(function(s, scales, width, height, x, y) {
+                this.transition()
+                    .delay(2000)
+                    .duration(400)
+                    .attr('cx', function(d) { return scales.x(x(d)); })
+                    .attr('cy', function(d) { return height - scales.y(y(d)); });
+            })
+            .exit(function() {
+                var trans = this.transition()
+                    .duration(2000);
+
+                trans.each('start', function() {
+                    d3.transition(d3.select(this))
+                        .attr('r', 10)
+                        .style('opacity', 1e-6);
+                });
+
+                trans.each('end', function() {
+                    d3.select(this).remove()
+                });
+            });
+
+
+        function train(data) {
+            var xExtent = d3.extent(data, function(p) { return p[0]; });
+            var yExtent = d3.extent(data, function(p) { return p[1]; });
+            x.domain(xExtent).range([0, 200]);
+            y.domain(yExtent).range([0, 100]);
+            p.r(i);
+        }
+
+        function render(data) {
+            d3.select("#scatter")
+                .datum(data)
+                .call(p);
+        }
+        train(data);
+        render(data);
+
+        setTimeout(function() {
+            var ndata = data.slice(0, z / 2);
+            train(ndata);
+            render(ndata);
+        }, 4000)
+    }
+
+    function showLine(data) {
+        var x = d3.time.scale();
+        var y = d3.scale.linear();
+        var color = d3.scale.category20();
+
+        var xExtent = d3.extent(data, function(p) { return p[0]; });
+        var yExtent = d3.extent(data, function(p) { return p[1]; });
+
+        x.domain(xExtent).range([0, 200]);
+        y.domain(yExtent).range([0, 100]);
+
+        var p = line()
+            .scales({
+                x: x,
+                y: y,
+                color: color
+            })
+            .size([200, 100]);
+
+        d3.select("#line")
+            .datum(data)
+            .call(p);
+    }
+
+    d3.json('dow.json', function(data) {
+        var quotes = data.query.results.quote,
+            dateFmt = d3.time.format("%Y-%m-%d"),
+            cleaned = quotes.map(function(d) {
+                return [dateFmt.parse(d.date), parseFloat(d.Close, 10)];
+            }).reverse();
+
+        showScatter(cleaned);
+        showLine(cleaned);
+    });
+});
+</script>
+</head>
+<body>
+    <svg width="200px" height="100px" id="scatter"></svg>
+    <svg width="200px" height="100px" id="line"></svg>
+</body>
+</html>
