@@ -14,3 +14,4 @@ http.createServer(function (request, response) {
         fileServer.serve(request, response);
     });
 }).listen(port);
+console.log('listening on ', port);
